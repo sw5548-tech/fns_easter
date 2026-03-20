@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Easter Egg Coloring</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fb;
+    text-align: center;
+  }
+  h1 { margin-top: 30px; }
+  canvas {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-top: 20px;
+  }
+  .colors { margin-top: 20px; }
+  .color {
+    width: 32px; height: 32px;
+    display: inline-block;
+    border-radius: 50%;
+    margin: 6px;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #ccc;
+  }
+  button {
+    margin-top: 25px;
+    padding: 12px 24px;
+    border-radius: 999px;
+    border: none;
+    background: #0a66c2;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  #popup {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+  }
+  #popupContent {
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    width: 300px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Color Your Easter Egg</h1>
+<canvas id="canvas" width="320" height="420"></canvas>
+
+<div class="colors" id="palette"></div>
+<button onclick="openPopup()">Submit</button>
+
+<div id="popup">
+  <div id="popupContent">
+    <p>Enter your email:</p>
+    <input type="email" id="email" style="width:100%; padding:8px;" />
+    <br/><br/>
+    <button onclick="sendToBackend()">Send</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let selectedColor = '#ff6b6b';
+
+// --- MULTIPLE DESIGNS ---
+const designs = [
+  [new Path2D('M160 40 Q280 200 160 380 Q40 200 160 40 Z')],
+  [new Path2D('M160 40 Q280 200 160 380 Q40 200 160 40 Z'), new Path2D('M160 120 Q240 200 160 300 Q80 200 160 120 Z')],
+  [new Path2D('M160 40 Q280 200 160 380 Q40 200 160 40 Z'), new Path2D('M80 200 L240 200'), new Path2D('M160 100 L160 320')]
+];
+
+// Random selection
+const selectedDesign = designs[Math.floor(Math.random() * designs.length)];
+
+const segments = selectedDesign.map(p => ({ path: p, color: '#ffffff' }));
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  segments.forEach(s => {
+    ctx.fillStyle = s.color;
+    ctx.fill(s.path);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke(s.path);
+  });
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  segments.forEach(s => {
+    if (ctx.isPointInPath(s.path, x, y)) {
+      s.color = selectedColor;
+      draw();
+    }
+  });
+});
+
+// Palette
+['#ff6b6b','#ffd93d','#6bcB77','#4d96ff','#9d4edd','#000000'].forEach(c => {
+  const el = document.createElement('div');
+  el.className = 'color';
+  el.style.background = c;
+  el.onclick = () => selectedColor = c;
+  document.getElementById('palette').appendChild(el);
+});
+
+function openPopup() {
+  document.getElementById('popup').style.display = 'flex';
+}
+
+async function sendToBackend() {
+  const email = document.getElementById('email').value;
+  if (!email) return alert('Enter email');
+
+  const image = canvas.toDataURL('image/png');
+
+  await fetch('/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, image })
+  });
+
+  alert('Sent! Check your email');
+  document.getElementById('popup').style.display = 'none';
+}
+
+draw();
+</script>
+
+<!-- ================= BACKEND (Node.js Example) ================= -->
+<!--
+const express = require('express');
+const nodemailer = require('nodemailer');
+const app = express();
+
+app.use(express.json({ limit: '10mb' }));
+
+app.post('/send-email', async (req, res) => {
+  const { email, image } = req.body;
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'YOUR_EMAIL@gmail.com',
+      pass: 'YOUR_APP_PASSWORD'
+    }
+  });
+
+  await transporter.sendMail({
+    from: 'YOUR_EMAIL@gmail.com',
+    to: email,
+    subject: 'Your Easter Egg Design',
+    html: '<p>Here is your design!</p><img src="cid:egg"/>',
+    attachments: [{
+      filename: 'egg.png',
+      content: image.split("base64,")[1],
+      encoding: 'base64',
+      cid: 'egg'
+    }]
+  });
+
+  res.send({ success: true });
+});
+
+app.listen(3000, () => console.log('Server running'));
+-->
+
+</body>
+</html>
