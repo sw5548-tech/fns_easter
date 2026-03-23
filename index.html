@@ -48,7 +48,87 @@
 <div id="canvas"></div>
 
 
+<!-- modify this form HTML and place wherever you want your form -->
+<form id="emailForm">
+  <label>
+    Your email:
+    <input type="email" id="email" required>
+  </label>
+
+  <button type="submit">Send me my drawing</button>
+</form>
+
+
+<button onclick="downloadPNG()">Download Image</button>
+
 <script>
+
+// ✅ Step 1: Convert SVG → PNG (in browser)
+function getSVGData() {
+  const svg = document.querySelector("#canvas svg");
+  const serializer = new XMLSerializer();
+  return serializer.serializeToString(svg);
+}
+
+function svgToPNG(callback) {
+  const svgData = getSVGData();
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const img = new Image();
+  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  img.onload = function () {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+
+    const pngData = canvas.toDataURL("image/png");
+    callback(pngData);
+
+    URL.revokeObjectURL(url);
+  };
+
+  img.src = url;
+}
+
+//✅ Step 3: Handle submit
+document.getElementById("emailForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value;
+
+  svgToPNG((pngData) => {
+    // 🚨 This is where backend is needed
+    fetch("YOUR_BACKEND_ENDPOINT", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: email,
+        image: pngData
+      })
+    })
+    .then(res => res.json())
+    .then(() => alert("Sent! Check your email"))
+    .catch(() => alert("Error sending email"));
+  });
+});
+
+//or download (for now)
+function downloadPNG() {
+  svgToPNG((pngData) => {
+    const link = document.createElement("a");
+    link.href = pngData;
+    link.download = "my-coloring.png";
+    link.click();
+  });
+}
+
+
+
 let currentColor = "#ff0000";
 
 // ✅ SVG MUST be a string (use backticks)
@@ -324,6 +404,7 @@ let svgs = [
   `
 ];
 
+// random images 
 function loadRandomSVG() {
   const randomIndex = Math.floor(Math.random() * svgs.length);
   document.getElementById("canvas").innerHTML = svgs[randomIndex];
