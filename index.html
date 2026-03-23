@@ -47,8 +47,8 @@
 
 <div id="canvas"></div>
 
-
-<!-- modify this form HTML and place wherever you want your form -->
+<h3>We will send your image to your email</h3>
+<!-- send directly to the visitor -->
 <form id="emailForm">
   <label>
     Your email:
@@ -58,7 +58,28 @@
   <button type="submit">Send me my drawing</button>
 </form>
 
+<h3>Please leave a comment</h3>
+<!-- formspree leave comment section -->
+<form
+  action="https://formspree.io/f/mojkgqyj"
+  method="POST"
+>
+  <label>
+    Your email:
+    <input type="email" name="email">
+  </label>
+  <br>
+    <br>
+  <label>
+    Your message:
+    <textarea name="message"></textarea>
+  </label>
+    <br>
+  <!-- your other form fields go here -->
+  <button type="submit">Send</button>
+</form>
 
+<h3>download the image</h3>
 <button onclick="downloadPNG()">Download Image</button>
 
 <script>
